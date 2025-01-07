@@ -1,8 +1,10 @@
 // lib/screens/admin/dashboard_screen.dart
 import 'package:flutter/material.dart';
-import '../../widgets/side_navigation_bar.dart';
-import '../../services/admin_api.dart';
-import '../../models/dashboard_stats.dart';
+import '../../../services/admin_api.dart';
+import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '../../../widgets/side_navigation_bar.dart';
+import 'package:intl/intl.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({Key? key}) : super(key: key);
@@ -12,86 +14,269 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  late Future<DashboardStats> _statsFuture;
+  late Future<Map<String, dynamic>> _dashboardData;
 
   @override
   void initState() {
     super.initState();
-    _statsFuture = AdminApi.getDashboardStats();
+    _dashboardData = AdminApi.getDashboardData();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      drawer: SideNavigationBar(),
       appBar: AppBar(
-        title: Text('Dashboard'),
+        title: const Text("Tableau de Bord"),
       ),
-      body: FutureBuilder<DashboardStats>(
-        future: _statsFuture,
-        builder: (context, snapshot) {
-          if (snapshot.hasData) {
-            DashboardStats stats = snapshot.data!;
-            return Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: GridView.count(
-                crossAxisCount: MediaQuery.of(context).size.width > 600 ? 4 : 2,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-                children: [
-                  _buildStatCard('Pharmacies Actives', stats.activePharmacies, Colors.green),
-                  _buildStatCard('Pharmacies Inactives', stats.inactivePharmacies, Colors.red),
-                  _buildStatCard('Utilisateurs', stats.totalUsers, Colors.blue),
-                  _buildStatCard('Demandes', stats.totalRequests, Colors.orange),
-                  _buildStatCard('Réclamations', stats.totalReclamations, Colors.purple),
-                  _buildStatCard('Rapports', stats.totalReports, Colors.teal),
-                  // Ajoutez d'autres statistiques si nécessaire
-                ],
-              ),
-            );
-          } else if (snapshot.hasError) {
-            return Center(child: Text('Erreur : ${snapshot.error}'));
-          } else {
-            return Center(child: CircularProgressIndicator());
-          }
-        },
+      drawer: const SideNavigationBar(),
+      body: Padding(
+        padding: EdgeInsets.all(16.0.w),
+        child: FutureBuilder<Map<String, dynamic>>(
+          future: _dashboardData,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            } else if (snapshot.hasError) {
+              return Center(
+                child: Text(
+                  "Erreur lors du chargement des données.",
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyLarge
+                      ?.copyWith(color: Colors.red),
+                ),
+              );
+            } else if (snapshot.hasData) {
+              return _buildDashboard(snapshot.data!);
+            } else {
+              return const Center(child: Text("Aucune donnée disponible."));
+            }
+          },
+        ),
       ),
     );
   }
 
-  Widget _buildStatCard(String title, int count, Color color) {
+  Widget _buildDashboard(Map<String, dynamic> data) {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildStatsGrid(data),
+          SizedBox(height: 16.h),
+          _buildCharts(data),
+          SizedBox(height: 16.h),
+          _buildAlerts(data['alerts'] ?? []),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatsGrid(Map<String, dynamic> data) {
+    return GridView.count(
+      crossAxisCount: ScreenUtil().orientation == Orientation.portrait ? 2 : 3,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisSpacing: 16.w,
+      mainAxisSpacing: 16.h,
+      children: [
+        _buildStatCard(
+            "Total Clients", data['totalClients'], Icons.people, Colors.blue),
+        _buildStatCard("Total Pharmacies", data['totalPharmacies'],
+            Icons.local_pharmacy, Colors.green),
+        _buildStatCard("Demandes Actives", data['activeRequests'],
+            Icons.hourglass_top, Colors.orange),
+        _buildStatCard("Demandes Complétées", data['completedRequests'],
+            Icons.check_circle, Colors.teal),
+        _buildStatCard("Demandes Refusées", data['refusedExpiredRequests'],
+            Icons.cancel, Colors.red),
+        _buildTimeAndDateCard(), // Added Time and Date card
+      ],
+    );
+  }
+
+  Widget _buildTimeAndDateCard() {
+    final currentTime = DateFormat('hh:mm a').format(DateTime.now());
+    final currentDate = DateFormat('EEE, d MMM y').format(DateTime.now());
+
     return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 6,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12.r),
+        side: BorderSide(color: Colors.grey.withOpacity(0.5), width: 2.w),
+      ),
       child: Container(
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
+          gradient: LinearGradient(
+            colors: [Colors.grey.withOpacity(0.1), Colors.white],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(12.r),
         ),
-        child: Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 8.0.w, vertical: 12.h),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text(
-                count.toString(),
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: color,
+              Icon(Icons.access_time, size: 40.sp, color: Colors.grey),
+              SizedBox(height: 8.h),
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    currentTime,
+                    style: Theme.of(context)
+                        .textTheme
+                        .headlineMedium
+                        ?.copyWith(fontSize: 20.sp),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
               ),
-              SizedBox(height: 8),
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: color,
+              SizedBox(height: 8.h),
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    currentDate,
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodyMedium
+                        ?.copyWith(fontSize: 14.sp),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                  ),
                 ),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildStatCard(String title, int count, IconData icon, Color color) {
+    return Card(
+      elevation: 6,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12.r),
+        side: BorderSide(color: color.withOpacity(0.5), width: 2.w),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [color.withOpacity(0.1), Colors.white],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(12.r),
+        ),
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 8.0.w, vertical: 12.h),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Icon(icon, size: 40.sp, color: color),
+              SizedBox(height: 8.h),
+              Text(
+                "$count",
+                style: Theme.of(context)
+                    .textTheme
+                    .headlineMedium
+                    ?.copyWith(fontSize: 20.sp),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 8.h),
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    title,
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodyMedium
+                        ?.copyWith(fontSize: 14.sp),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCharts(Map<String, dynamic> data) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text("Graphiques", style: Theme.of(context).textTheme.headlineSmall),
+        SizedBox(height: 16.h),
+        SizedBox(
+          height: 200.h,
+          child: BarChart(
+            BarChartData(
+              barGroups: (data['trendData'] as List<dynamic>).map((item) {
+                return BarChartGroupData(
+                  x: DateTime.parse(item['date']).day,
+                  barRods: [
+                    BarChartRodData(
+                      toY: item['requests'].toDouble(),
+                      gradient: LinearGradient(
+                          colors: [Colors.blue, Colors.lightBlue]),
+                    ),
+                  ],
+                );
+              }).toList(),
+            ),
+          ),
+        ),
+        SizedBox(height: 16.h),
+        SizedBox(
+          height: 200.h,
+          child: PieChart(
+            PieChartData(
+              sections: [
+                PieChartSectionData(
+                    value: data['activePharmacies'],
+                    color: Colors.green,
+                    title: "Actives"),
+                PieChartSectionData(
+                    value: data['inactivePharmacies'],
+                    color: Colors.red,
+                    title: "Inactives"),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAlerts(List alerts) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+      child: ListView.separated(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: alerts.length,
+        separatorBuilder: (context, index) => Divider(height: 1.h),
+        itemBuilder: (context, index) {
+          final alert = alerts[index];
+          return ListTile(
+            leading: Icon(
+                alert['type'] == "pharmacy" ? Icons.warning : Icons.error,
+                color: Colors.red),
+            title: Text(alert['message'],
+                style: Theme.of(context).textTheme.bodyLarge),
+          );
+        },
       ),
     );
   }

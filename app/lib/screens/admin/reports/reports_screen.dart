@@ -19,7 +19,6 @@ class ReportsScreen extends StatefulWidget {
 
 class _ReportsScreenState extends State<ReportsScreen> {
   late Future<DashboardStats> _statsFuture;
-  late List<Stat> data; // Déclarez data ici pour y accéder dans les getTitles
 
   @override
   void initState() {
@@ -27,248 +26,221 @@ class _ReportsScreenState extends State<ReportsScreen> {
     _statsFuture = AdminApi.getDashboardStats();
   }
 
-  List<BarChartGroupData> _createSampleData(DashboardStats stats) {
-    data = [
-      Stat('Pharmacies Actives', stats.activePharmacies),
-      Stat('Pharmacies Inactives', stats.inactivePharmacies),
-      Stat('Utilisateurs', stats.totalUsers),
-      Stat('Demandes', stats.totalRequests),
-      Stat('Réclamations', stats.totalReclamations),
-      Stat('Rapports', stats.totalReports),
-    ];
-
-    return data.asMap().entries.map((entry) {
-      int index = entry.key;
-      Stat stat = entry.value;
-      return BarChartGroupData(
-        x: index,
-        barRods: [
-          BarChartRodData(
-            toY: stat.value.toDouble(),
-            color: Colors.blue,
-            width: 16,
-            borderRadius: BorderRadius.circular(4),
-          ),
-        ],
-        showingTooltipIndicators: [0],
-      );
-    }).toList();
-  }
-
-  void _exportCSV() async {
-    try {
-      DashboardStats stats = await _statsFuture;
-      List<List<dynamic>> rows = [
-        ['Label', 'Value'],
-        ['Pharmacies Actives', stats.activePharmacies],
-        ['Pharmacies Inactives', stats.inactivePharmacies],
-        ['Utilisateurs', stats.totalUsers],
-        ['Demandes', stats.totalRequests],
-        ['Réclamations', stats.totalReclamations],
-        ['Rapports', stats.totalReports],
-      ];
-
-      String csv = const ListToCsvConverter().convert(rows);
-      final directory = await getTemporaryDirectory();
-      final path = '${directory.path}/dashboard_stats.csv';
-      final file = File(path);
-      await file.writeAsString(csv);
-
-      await Share.shareXFiles([XFile(path)], text: 'Dashboard Stats CSV');
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur lors de l\'export CSV: $e')),
-      );
-    }
-  }
-
-  void _exportPDF() async {
-    try {
-      DashboardStats stats = await _statsFuture;
-
-      final pdf = pw.Document();
-
-      pdf.addPage(
-        pw.Page(
-          build: (pw.Context context) => pw.Center(
-            child: pw.Column(
-              children: [
-                pw.Text(
-                  'Dashboard Stats',
-                  style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
-                ),
-                pw.SizedBox(height: 20),
-                pw.TableHelper.fromTextArray(
-                  headers: ['Label', 'Value'],
-                  data: [
-                    ['Pharmacies Actives', stats.activePharmacies.toString()],
-                    ['Pharmacies Inactives', stats.inactivePharmacies.toString()],
-                    ['Utilisateurs', stats.totalUsers.toString()],
-                    ['Demandes', stats.totalRequests.toString()],
-                    ['Réclamations', stats.totalReclamations.toString()],
-                    ['Rapports', stats.totalReports.toString()],
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-
-      final directory = await getTemporaryDirectory();
-      final path = '${directory.path}/dashboard_stats.pdf';
-      final file = File(path);
-      await file.writeAsBytes(await pdf.save());
-
-      await Share.shareXFiles([XFile(path)], text: 'Dashboard Stats PDF');
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur lors de l\'export PDF: $e')),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      drawer: SideNavigationBar(),
       appBar: AppBar(
-        title: Text('Rapports'),
-        backgroundColor: Theme.of(context).primaryColor,
+        title: const Text("Rapports"),
+        backgroundColor: Theme.of(context).colorScheme.primary,
       ),
-      body: FutureBuilder<DashboardStats>(
-        future: _statsFuture,
-        builder: (context, snapshot) {
-          if (snapshot.hasData) {
-            DashboardStats stats = snapshot.data!;
-            return Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                children: [
-                  // Graphique des statistiques
-                  Expanded(
-                    child: BarChart(
-                      BarChartData(
-                        alignment: BarChartAlignment.spaceAround,
-                        backgroundColor: Colors.grey,
-                        maxY: (stats.activePharmacies > stats.inactivePharmacies
-                                ? stats.activePharmacies
-                                : stats.inactivePharmacies)
-                            .toDouble() +
-                            10, // Ajouter un peu de marge
-                        barTouchData: BarTouchData(
-                          enabled: true,
-                          touchTooltipData: BarTouchTooltipData(
-                            getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                              String label = data[group.x].label;
-                              return BarTooltipItem(
-                                '$label\n',
-                                TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 18,
-                                ),
-                                children: <TextSpan>[
-                                  TextSpan(
-                                    text: '${rod.toY}',
-                                    style: TextStyle(
-                                      color: Colors.yellow,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
-                        ),
-                        titlesData: FlTitlesData(
-                          show: true,
-                          bottomTitles: AxisTitles(
-                            sideTitles: SideTitles(
-                              showTitles: true,
-                              getTitlesWidget: (double value, TitleMeta meta) {
-                                if (value.toInt() < data.length) {
-                                  String label = data[value.toInt()].label;
-                                  return Padding(
-                                    padding: const EdgeInsets.only(top: 8.0),
-                                    child: Text(
-                                      label,
-                                      style: TextStyle(
-                                        color: Colors.black,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  );
-                                } else {
-                                  return Container();
-                                }
-                              },
-                            ),
-                          ),
-                          leftTitles: AxisTitles(
-                            sideTitles: SideTitles(
-                              showTitles: true,
-                              interval: 10,
-                              getTitlesWidget: (double value, TitleMeta meta) {
-                                return Text(
-                                  value.toInt().toString(),
-                                  style: TextStyle(
-                                    color: Colors.black,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
-                                  ),
-                                );
-                              },
-                              reservedSize: 30,
-                            ),
-                          ),
-                        ),
-                        borderData: FlBorderData(
-                          show: false,
-                        ),
-                        barGroups: _createSampleData(stats),
-                        gridData: FlGridData(show: true),
-                      ),
-                      duration: Duration(milliseconds: 350), // Optionnel
-                    ),
-                  ),
-                  SizedBox(height: 20),
-                  // Boutons d'exportation
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      ElevatedButton.icon(
-                        onPressed: _exportCSV,
-                        icon: Icon(Icons.download),
-                        label: Text('Exporter en CSV'),
-                      ),
-                      ElevatedButton.icon(
-                        onPressed: _exportPDF,
-                        icon: Icon(Icons.download),
-                        label: Text('Exporter en PDF'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            );
-          } else if (snapshot.hasError) {
-            return Center(child: Text('Erreur : ${snapshot.error}'));
-          } else {
-            return Center(child: CircularProgressIndicator());
-          }
-        },
+      drawer: const SideNavigationBar(),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: FutureBuilder<DashboardStats>(
+          future: _statsFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            } else if (snapshot.hasError) {
+              return Center(
+                child: Text(
+                  "Erreur lors du chargement des données.",
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.red),
+                  textAlign: TextAlign.center,
+                ),
+              );
+            } else if (snapshot.hasData) {
+              return _buildReportsContent(snapshot.data!);
+            } else {
+              return Center(
+                child: Text(
+                  "Aucune donnée disponible.",
+                  style: Theme.of(context).textTheme.bodyLarge,
+                  textAlign: TextAlign.center,
+                ),
+              );
+            }
+          },
+        ),
       ),
     );
   }
+
+  Widget _buildReportsContent(DashboardStats stats) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "Rapports Généraux",
+          style: Theme.of(context).textTheme.headlineMedium,
+        ),
+        const SizedBox(height: 16),
+        Expanded(
+          child: ListView(
+            children: [
+              _buildChartSection(),
+              const SizedBox(height: 16),
+              _buildStatTable(stats),
+              const SizedBox(height: 16),
+              _buildExportButtons(stats),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildChartSection() {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            Text(
+              "Distribution des Pharmacies",
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 200,
+              child: PieChart(
+                PieChartData(
+                  sections: [
+                    PieChartSectionData(
+                      value: 60,
+                      title: 'Actives',
+                      color: Colors.green,
+                      radius: 50,
+                    ),
+                    PieChartSectionData(
+                      value: 40,
+                      title: 'Inactives',
+                      color: Colors.red,
+                      radius: 50,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatTable(DashboardStats stats) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "Statistiques",
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            const SizedBox(height: 16),
+            Table(
+              children: [
+                _buildTableRow("Pharmacies Actives", stats.activePharmacies.toString()),
+                _buildTableRow("Pharmacies Inactives", stats.inactivePharmacies.toString()),
+                _buildTableRow("Total Utilisateurs", stats.totalUsers.toString()),
+                _buildTableRow("Total Requêtes", stats.totalRequests.toString()),
+                _buildTableRow("Total Réclamations", stats.totalReclamations.toString()),
+                _buildTableRow("Total Rapports", stats.totalReports.toString()),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  TableRow _buildTableRow(String label, String value) {
+    return TableRow(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: Text(label, style: Theme.of(context).textTheme.bodyLarge),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: Text(value, style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold)),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildExportButtons(DashboardStats stats) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        ElevatedButton.icon(
+          onPressed: () => _exportToCsv(stats),
+          icon: const Icon(Icons.file_download),
+          label: const Text("Exporter CSV"),
+        ),
+        ElevatedButton.icon(
+          onPressed: () => _exportToPdf(stats),
+          icon: const Icon(Icons.picture_as_pdf),
+          label: const Text("Exporter PDF"),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _exportToCsv(DashboardStats stats) async {
+    final csvData = [
+      ["Statistique", "Valeur"],
+      ["Pharmacies Actives", stats.activePharmacies],
+      ["Pharmacies Inactives", stats.inactivePharmacies],
+      ["Total Utilisateurs", stats.totalUsers],
+      ["Total Requêtes", stats.totalRequests],
+      ["Total Réclamations", stats.totalReclamations],
+      ["Total Rapports", stats.totalReports],
+    ];
+
+    final csvString = const ListToCsvConverter().convert(csvData);
+    final tempDir = await getTemporaryDirectory();
+    final file = File('${tempDir.path}/rapport.csv');
+    await file.writeAsString(csvString);
+
+    await Share.shareFiles([file.path], text: 'Rapport CSV');
+  }
+
+  Future<void> _exportToPdf(DashboardStats stats) async {
+    final pdf = pw.Document();
+
+    pdf.addPage(
+      pw.Page(
+        build: (pw.Context context) => pw.Column(
+          children: [
+            pw.Text("Rapport Statistiques", style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold)),
+            pw.SizedBox(height: 16),
+            pw.Table.fromTextArray(
+              data: [
+                ["Statistique", "Valeur"],
+                ["Pharmacies Actives", stats.activePharmacies],
+                ["Pharmacies Inactives", stats.inactivePharmacies],
+                ["Total Utilisateurs", stats.totalUsers],
+                ["Total Requêtes", stats.totalRequests],
+                ["Total Réclamations", stats.totalReclamations],
+                ["Total Rapports", stats.totalReports],
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+
+    final tempDir = await getTemporaryDirectory();
+    final file = File('${tempDir.path}/rapport.pdf');
+    await file.writeAsBytes(await pdf.save());
+
+    await Share.shareFiles([file.path], text: 'Rapport PDF');
+  }
 }
-
-class Stat {
-  final String label;
-  final int value;
-
-  Stat(this.label, this.value);
-}
-

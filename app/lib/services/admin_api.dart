@@ -42,6 +42,30 @@ class AdminApi {
     }
   }
 
+
+  static Future<Map<String, dynamic>> getDashboardData() async {
+    // Mock API call for testing
+    await Future.delayed(const Duration(seconds: 2)); // Simulate delay
+    return {
+      "totalClients": 120,
+      "totalPharmacies": 30,
+      "activeRequests": 50,
+      "completedRequests": 200,
+      "refusedExpiredRequests": 20,
+      "trendData": [
+        {"date": "2025-01-01", "requests": 30},
+        {"date": "2025-01-02", "requests": 40},
+        {"date": "2025-01-03", "requests": 35}
+      ],
+      "activePharmacies": 20,
+      "inactivePharmacies": 10,
+      "alerts": [
+        {"type": "pharmacy", "message": "Pharmacy A has a high refusal rate."},
+        {"type": "system", "message": "Possible issue with the API."}
+      ]
+    };
+  }
+
   // =========================
   //        PHARMACIES
   // =========================

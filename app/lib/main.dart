@@ -1,6 +1,8 @@
+// lib/main.dart
 import 'package:flutter/material.dart';
-import 'package:dwaya_flutter/router.dart';
-import 'package:dwaya_flutter/theme/app_theme.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'screens/admin/dashboard_screen.dart';
+import 'theme/app_theme.dart';
 
 void main() {
   runApp(const MyApp());
@@ -11,12 +13,16 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Dwaya',
-      theme: AppTheme.lightTheme,
-      debugShowCheckedModeBanner: false,
-      initialRoute: '/',
-      onGenerateRoute: AppRouter.generateRoute,
+    return ScreenUtilInit(
+      designSize: const Size(360, 690),
+      builder: (context, child) {
+        return MaterialApp(
+          title: 'Dwaya Admin Dashboard',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.lightTheme,
+          home: const DashboardScreen(),
+        );
+      },
     );
   }
 }

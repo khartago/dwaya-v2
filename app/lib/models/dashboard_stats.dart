@@ -1,5 +1,9 @@
 // lib/models/dashboard_stats.dart
 class DashboardStats {
+  final int userCount;
+  final int pharmacyCount;
+  final int requestCount;
+  final int reclamationCount;
   final int activePharmacies;
   final int inactivePharmacies;
   final int totalUsers;
@@ -8,6 +12,10 @@ class DashboardStats {
   final int totalReports;
 
   DashboardStats({
+    required this.userCount,
+    required this.pharmacyCount,
+    required this.requestCount,
+    required this.reclamationCount,
     required this.activePharmacies,
     required this.inactivePharmacies,
     required this.totalUsers,
@@ -18,12 +26,16 @@ class DashboardStats {
 
   factory DashboardStats.fromJson(Map<String, dynamic> json) {
     return DashboardStats(
-      activePharmacies: json['active_pharmacies'] ?? 0,
-      inactivePharmacies: json['inactive_pharmacies'] ?? 0,
-      totalUsers: json['total_users'] ?? 0,
-      totalRequests: json['total_requests'] ?? 0,
-      totalReclamations: json['total_reclamations'] ?? 0,
-      totalReports: json['total_reports'] ?? 0,
+      userCount: json['userCount'] ?? 0,
+      pharmacyCount: json['pharmacyCount'] ?? 0,
+      requestCount: json['requestCount'] ?? 0,
+      reclamationCount: json['reclamationCount'] ?? 0,
+      activePharmacies: json['activePharmacies'] ?? 0,
+      inactivePharmacies: json['inactivePharmacies'] ?? 0,
+      totalUsers: json['totalUsers'] ?? 0,
+      totalRequests: json['totalRequests'] ?? 0,
+      totalReclamations: json['totalReclamations'] ?? 0,
+      totalReports: json['totalReports'] ?? 0,
     );
   }
 }
