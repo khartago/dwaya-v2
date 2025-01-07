@@ -1,69 +1,52 @@
 import 'package:flutter/material.dart';
-import 'package:dwaya_flutter/utils/constants.dart';
-import 'package:dwaya_flutter/screens/auth/splash_screen.dart';
-import 'package:dwaya_flutter/screens/auth/login_screen.dart';
-import 'package:dwaya_flutter/screens/auth/register_client_screen.dart';
-import 'package:dwaya_flutter/screens/auth/forgot_password_screen.dart';
-
-// Import des écrans administratifs nécessaires
-import 'package:dwaya_flutter/screens/admin/dashboard_screen.dart';
-import 'package:dwaya_flutter/screens/admin/pharmacies/pharmacy_list_screen.dart';
-import 'package:dwaya_flutter/screens/admin/pharmacies/pharmacy_detail_screen.dart';
-import 'package:dwaya_flutter/screens/admin/pharmacies/pharmacy_form_screen.dart';
-import 'package:dwaya_flutter/screens/admin/reports/reports_screen.dart';
-
-import 'package:dwaya_flutter/models/pharmacy.dart';
+import '../screens/admin/dashboard_screen.dart';
+import '../screens/admin/pharmacies/pharmacy_list_screen.dart';
+import '../screens/admin/pharmacies/add_pharmacy_screen.dart';
+import '../screens/admin/pharmacies/update_pharmacy_screen.dart';
+import '../screens/auth/login_screen.dart';
+import '../screens/auth/register_client_screen.dart';
+import '../screens/auth/forgot_password_screen.dart';
+import '../screens/auth/splash_screen.dart';
 
 class AppRouter {
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
-      // Routes d'authentification
-      case Constants.routeSplash:
+      // Authentication Routes
+      case '/splash':
         return MaterialPageRoute(builder: (_) => const SplashScreen());
-      case Constants.routeLogin:
+      case '/login':
         return MaterialPageRoute(builder: (_) => const LoginScreen());
-      case Constants.routeRegister:
+      case '/register':
         return MaterialPageRoute(builder: (_) => const RegisterClientScreen());
-      case Constants.routeForgotPassword:
+      case '/forgot-password':
         return MaterialPageRoute(builder: (_) => const ForgotPasswordScreen());
 
-      // Routes administratives
-      case Constants.routeAdminDashboard:
+      // Admin Routes
+      case '/dashboard':
         return MaterialPageRoute(builder: (_) => const DashboardScreen());
-      case Constants.routeAdminPharmacies:
+      case '/pharmacies':
         return MaterialPageRoute(builder: (_) => const PharmacyListScreen());
-      case Constants.routeAdminPharmacyDetail:
-        final args = settings.arguments;
-        if (args is Pharmacy) {
-          return MaterialPageRoute(builder: (_) => PharmacyDetailScreen(pharmacy: args));
-        }
-        return _errorScreen('Arguments invalides pour PharmacyDetailScreen');
-      case Constants.routeAdminPharmacyForm:
-        final args = settings.arguments;
-        if (args is Pharmacy?) {
-          return MaterialPageRoute(builder: (_) => PharmacyFormScreen(pharmacy: args));
-        }
-        return _errorScreen('Arguments invalides pour PharmacyFormScreen');
-      case Constants.routeAdminReports:
-        return MaterialPageRoute(builder: (_) => const ReportsScreen());
+      case '/add-pharmacy':
+        return MaterialPageRoute(builder: (_) => const AddPharmacyScreen());
+      case '/update-pharmacy':
+        final args = settings.arguments as Map<String, dynamic>;
+        return MaterialPageRoute(
+          builder: (_) => UpdatePharmacyScreen(pharmacy: args),
+        );
 
-      // Route inconnue
+      // Unknown Route
       default:
-        return _errorScreen('Route inconnue: ${settings.name}');
-    }
-  }
-
-  static MaterialPageRoute<dynamic> _errorScreen(String message) {
-    return MaterialPageRoute(
-      builder: (_) => Scaffold(
-        appBar: AppBar(title: const Text('Erreur')),
-        body: Center(
-          child: Text(
-            message,
-            style: const TextStyle(color: Colors.red, fontSize: 18),
+        return MaterialPageRoute(
+          builder: (context) => Scaffold(
+            appBar: AppBar(title: const Text('Erreur')),
+            body: Center(
+              child: Text(
+                'Route inconnue: ${settings.name}',
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+            ),
           ),
-        ),
-      ),
-    );
+        );
+    }
   }
 }

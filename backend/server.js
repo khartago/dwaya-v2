@@ -19,6 +19,7 @@ const requestRoutes = require('./routes/requests');
 const messageRoutes = require('./routes/messages');
 const reclamationRoutes = require('./routes/reclamations');
 const regionRoutes = require('./routes/regions');
+const adminRoutes = require('./routes/admin'); // New admin routes
 
 const User = require('./models/User');
 const Pharmacy = require('./models/Pharmacy');
@@ -28,12 +29,12 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "*", // À restreindre en prod
+    origin: "*", // Restrict in production
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"]
   }
 });
 
-// Sécurité & parsing
+// Security & parsing
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
@@ -45,7 +46,7 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// Connexion à la base de données
+// Database connection
 connectDB();
 
 // Routes
@@ -56,13 +57,14 @@ app.use('/api/requests', requestRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/reclamations', reclamationRoutes);
 app.use('/api/regions', regionRoutes);
+app.use('/api/admin', adminRoutes); // Added admin routes
 
-// Gestion des 404
+// Handle 404
 app.use((req, res) => {
   res.status(404).json({ message: 'Route non trouvée.' });
 });
 
-// Socket.IO : authentification (optionnel)
+// Socket.IO authentication (optional)
 io.use(async (socket, next) => {
   const token = socket.handshake.auth.token;
   if (!token) {
@@ -104,7 +106,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('new_message', async ({ requestId, message }) => {
-    // Exemple : enregistrer dans la BD et émettre aux autres
+    // Example: Save to DB and emit to others
     // ... 
     io.to(requestId).emit('message_received', {
       expediteur: socket.user.id,
@@ -117,10 +119,10 @@ io.on('connection', (socket) => {
   });
 });
 
-// Initialiser la tâche CRON avec Socket.IO si nécessaire
+// Initialize CRON job with Socket.IO if needed
 subscriptionChecker(io);
 
-// Démarrage du serveur
+// Start server
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`Serveur démarré sur le port ${PORT}`);

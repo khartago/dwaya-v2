@@ -26,7 +26,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Tableau de Bord"),
+        backgroundColor: Theme.of(context).primaryColor,
+        elevation: 0,
+        title: Text(
+          "Tableau de Bord",
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+        ),
       ),
       drawer: const SideNavigationBar(),
       body: Padding(
