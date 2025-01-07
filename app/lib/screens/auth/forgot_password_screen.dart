@@ -1,7 +1,6 @@
-// lib/screens/forgot_password_screen.dart
 import 'package:flutter/material.dart';
-import 'package:dwaya_flutter/services/api_service.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:dwaya_flutter/services/api_service.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({Key? key}) : super(key: key);
@@ -11,165 +10,148 @@ class ForgotPasswordScreen extends StatefulWidget {
 }
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
-  bool step1 = true;
-
+  final _formKey = GlobalKey<FormState>();
   final _telCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _codeCtrl = TextEditingController();
   final _newPassCtrl = TextEditingController();
 
-  String _message = "";
+  bool step1 = true;
   bool _loading = false;
 
-  void showError(String message) {
-    Fluttertoast.showToast(
-      msg: message,
-      backgroundColor: Colors.red,
-      textColor: Colors.white,
-      toastLength: Toast.LENGTH_LONG,
-    );
+  @override
+  void dispose() {
+    _telCtrl.dispose();
+    _emailCtrl.dispose();
+    _codeCtrl.dispose();
+    _newPassCtrl.dispose();
+    super.dispose();
   }
 
-  void showSuccess(String message) {
+  void showToast(String message, bool success) {
     Fluttertoast.showToast(
       msg: message,
-      backgroundColor: Colors.green,
+      backgroundColor: success ? Theme.of(context).colorScheme.primary : Colors.red,
       textColor: Colors.white,
-      toastLength: Toast.LENGTH_LONG,
     );
   }
 
   Future<void> _requestCode() async {
-    String telephone = _telCtrl.text.trim();
-    String email = _emailCtrl.text.trim();
-
-    if (telephone.isEmpty && email.isEmpty) {
-      showError("Veuillez entrer votre téléphone ou votre email.");
-      return;
-    }
-
-    setState(() {
-      _message = "";
-      _loading = true;
-    });
-
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _loading = true);
     try {
       await ApiService.forgotPassword(
-        telephone: telephone.isEmpty ? null : telephone,
-        email: email.isEmpty ? null : email,
+        telephone: _telCtrl.text.trim(),
+        email: _emailCtrl.text.trim(),
       );
-      setState(() {
-        _message = "Un code de réinitialisation a été envoyé. Vérifiez vos SMS/Email.";
-        step1 = false;
-      });
-      showSuccess(_message);
+      setState(() => step1 = false);
+      showToast("Code envoyé. Vérifiez votre téléphone ou votre email.", true);
     } catch (e) {
-      setState(() => _message = e.toString());
-      showError(_message);
+      showToast(e.toString(), false);
     } finally {
       setState(() => _loading = false);
     }
   }
 
   Future<void> _resetPassword() async {
-    String telephone = _telCtrl.text.trim();
-    String email = _emailCtrl.text.trim();
-    String code = _codeCtrl.text.trim();
-    String newPassword = _newPassCtrl.text.trim();
-
-    if (code.isEmpty || newPassword.isEmpty) {
-      showError("Veuillez remplir tous les champs.");
-      return;
-    }
-
-    setState(() {
-      _message = "";
-      _loading = true;
-    });
-
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _loading = true);
     try {
       await ApiService.resetPassword(
-        telephone: telephone.isEmpty ? null : telephone,
-        email: email.isEmpty ? null : email,
-        code: code,
-        newPassword: newPassword,
+        telephone: _telCtrl.text.trim(),
+        email: _emailCtrl.text.trim(),
+        code: _codeCtrl.text.trim(),
+        newPassword: _newPassCtrl.text.trim(),
       );
-      setState(() {
-        _message = "Votre mot de passe a été réinitialisé avec succès.";
-      });
-      showSuccess(_message);
+      showToast("Mot de passe réinitialisé avec succès !", true);
       Navigator.pop(context);
     } catch (e) {
-      setState(() => _message = e.toString());
-      showError(_message);
+      showToast(e.toString(), false);
     } finally {
       setState(() => _loading = false);
     }
   }
 
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Mot de passe oublié"),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24.0),
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            child: step1 ? _buildStep1() : _buildStep2(),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildStep1() {
     return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
+        const SizedBox(height: 40),
         Image.asset(
-          'assets/logo.png',
+          'assets/logo.png', // Ensure the logo is in the correct assets path
           height: 150,
         ),
-        const SizedBox(height: 30),
+        const SizedBox(height: 20),
         Text(
           "Réinitialiser votre mot de passe",
           style: Theme.of(context).textTheme.displayLarge,
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 16),
         Text(
-          "Pour réinitialiser votre mot de passe, veuillez entrer votre téléphone ou votre email. Un code de réinitialisation vous sera envoyé.",
+          "Entrez votre numéro de téléphone ou adresse email pour recevoir un code de réinitialisation.",
+          style: Theme.of(context).textTheme.bodyMedium,
           textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyLarge,
         ),
-        const SizedBox(height: 30),
-        TextField(
+        const SizedBox(height: 24),
+        TextFormField(
           controller: _telCtrl,
-          decoration: const InputDecoration(
-            labelText: "Téléphone",
-            hintText: "Ex : 98 123 456",
+          decoration: InputDecoration(
+            labelText: "Numéro de téléphone",
+            hintText: "Entrez votre numéro",
+            prefixIcon: const Icon(Icons.phone),
           ),
           keyboardType: TextInputType.phone,
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return "Veuillez entrer votre numéro de téléphone.";
+            }
+            return null;
+          },
         ),
-        const SizedBox(height: 20),
-        TextField(
+        const SizedBox(height: 16),
+        TextFormField(
           controller: _emailCtrl,
-          decoration: const InputDecoration(
-            labelText: "Email",
+          decoration: InputDecoration(
+            labelText: "Adresse email",
+            hintText: "Entrez votre email",
+            prefixIcon: const Icon(Icons.email),
           ),
           keyboardType: TextInputType.emailAddress,
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return "Veuillez entrer votre email.";
+            }
+            return null;
+          },
         ),
-        const SizedBox(height: 30),
-        if (_message.isNotEmpty)
-          Text(
-            _message,
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 24),
         SizedBox(
           width: double.infinity,
-          child: _loading
-              ? const CircularProgressIndicator()
-              : ElevatedButton(
-                  onPressed: _requestCode,
-                  style: ElevatedButton.styleFrom(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30.0),
-                    ),
-                    elevation: 5,
-                  ),
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 12.0),
-                    child: Text(
-                      "Obtenir le Code",
-                      style: TextStyle(fontSize: 18),
-                    ),
-                  ),
-                ),
+          child: ElevatedButton(
+            onPressed: _loading ? null : _requestCode,
+            child: _loading
+                ? const CircularProgressIndicator()
+                : const Text("Envoyer le code"),
+          ),
         ),
       ],
     );
@@ -177,85 +159,68 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   Widget _buildStep2() {
     return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
+        const SizedBox(height: 40),
         Image.asset(
-          'assets/logo.png',
-          height: 150,
-        ),
-        const SizedBox(height: 30),
-        Text(
-          "Réinitialiser votre mot de passe",
-          style: Theme.of(context).textTheme.displayLarge,
-          textAlign: TextAlign.center,
+          'assets/logo.png', // Ensure the logo is in the correct assets path
+          height: 100,
         ),
         const SizedBox(height: 20),
         Text(
-          "Entrez le code que vous avez reçu et votre nouveau mot de passe pour terminer la réinitialisation.",
+          "Configurer un nouveau mot de passe",
+          style: Theme.of(context).textTheme.headlineSmall,
           textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyLarge,
         ),
-        const SizedBox(height: 30),
-        TextField(
+        const SizedBox(height: 16),
+        Text(
+          "Entrez le code de réinitialisation reçu ainsi que votre nouveau mot de passe.",
+          style: Theme.of(context).textTheme.bodyLarge,
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 24),
+        TextFormField(
           controller: _codeCtrl,
-          decoration: const InputDecoration(
-            labelText: "Code de Réinitialisation",
-            hintText: "Ex : 123456",
+          decoration: InputDecoration(
+            labelText: "Code de réinitialisation",
+            hintText: "Entrez le code",
+            prefixIcon: const Icon(Icons.security),
           ),
           keyboardType: TextInputType.number,
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return "Veuillez entrer le code.";
+            }
+            return null;
+          },
         ),
-        const SizedBox(height: 20),
-        TextField(
+        const SizedBox(height: 16),
+        TextFormField(
           controller: _newPassCtrl,
-          decoration: const InputDecoration(
-            labelText: "Nouveau Mot de Passe",
-            hintText: "•••••••",
+          decoration: InputDecoration(
+            labelText: "Nouveau mot de passe",
+            hintText: "Entrez votre mot de passe",
+            prefixIcon: const Icon(Icons.lock),
           ),
           obscureText: true,
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return "Veuillez entrer un nouveau mot de passe.";
+            }
+            return null;
+          },
         ),
-        const SizedBox(height: 30),
-        if (_message.isNotEmpty)
-          Text(
-            _message,
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 24),
         SizedBox(
           width: double.infinity,
-          child: _loading
-              ? const CircularProgressIndicator()
-              : ElevatedButton(
-                  onPressed: _resetPassword,
-                  style: ElevatedButton.styleFrom(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30.0),
-                    ),
-                    elevation: 5,
-                  ),
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 12.0),
-                    child: Text(
-                      "Réinitialiser le Mot de Passe",
-                      style: TextStyle(fontSize: 18),
-                    ),
-                  ),
-                ),
+          child: ElevatedButton(
+            onPressed: _loading ? null : _resetPassword,
+            child: _loading
+                ? const CircularProgressIndicator()
+                : const Text("Réinitialiser le mot de passe"),
+          ),
         ),
       ],
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      // AppBar stylisée via le thème
-      appBar: AppBar(
-        title: const Text("Mot de Passe Oublié"),
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: step1 ? _buildStep1() : _buildStep2(),
-      ),
     );
   }
 }

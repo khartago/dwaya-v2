@@ -322,4 +322,17 @@ router.post('/reset-password', async (req, res) => {
   }
 });
 
+
+// Logout Route
+router.post('/logout', async (req, res) => {
+  try {
+    // Invalidate the user's session (if using a session store) or clear the token client-side.
+    // Example: Add token to a blacklist (if implemented) or rely on client-side clearing.
+    res.status(200).json({ message: 'Logged out successfully.' });
+  } catch (err) {
+    logger.error(err.message);
+    res.status(500).json({ message: 'Failed to logout.' });
+  }
+});
+
 module.exports = router;
