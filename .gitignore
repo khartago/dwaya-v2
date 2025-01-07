@@ -1,0 +1,14 @@
+# Flutter
+.dart_tool/
+build/
+.packages
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# Node.js
+node_modules/
+.env
+
+# General
+.DS_Store
+*.iml

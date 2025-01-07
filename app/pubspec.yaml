@@ -1,0 +1,46 @@
+name: dwaya_flutter
+description: "Application Flutter pour Dwaya.tn"
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ">=2.17.0 <3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # HTTP pour appeler votre backend
+  http: ^0.13.5
+
+  # Stocker le token localement
+  shared_preferences: ^2.0.15
+
+  # Pour choisir une image ou un fichier
+  image_picker: ^0.8.6
+
+  # Packages additionnels nécessaires
+  flutter_secure_storage: ^5.0.2
+  fluttertoast: ^8.0.9
+  url_launcher: ^6.0.20
+
+  # Optionnel: Pour des polices modernes
+  google_fonts: ^4.0.3
+  flutter_svg: ^1.1.6
+
+  # Packages supplémentaires recommandés
+  fl_chart: ^0.70.0
+  csv: ^5.0.0
+  pdf: ^3.8.1
+  share_plus: ^6.3.0
+  path_provider: ^2.0.11
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/logo.png
