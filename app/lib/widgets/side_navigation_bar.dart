@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '../screens/admin/dashboard_screen.dart';
 import '../screens/admin/pharmacies/pharmacy_list_screen.dart';
-//import '../screens/admin/users/user_list_screen.dart';
-//import '../screens/admin/requests/request_list_screen.dart';
-////import '../screens/admin/reports/reports_screen.dart';
+import '../screens/admin/users/user_list_screen.dart';
+import '../screens/admin/requests/request_list_screen.dart';
+//import '../screens/admin/reports/reports_screen.dart';
 import '../services/api_service.dart';
 
 class SideNavigationBar extends StatelessWidget {
@@ -43,7 +43,7 @@ class SideNavigationBar extends StatelessWidget {
                     title: 'Pharmacies',
                     route: PharmacyListScreen(),
                   ),
-                  /*_buildNavItem(
+                  _buildNavItem(
                     context,
                     icon: Icons.people_outline,
                     title: 'Utilisateurs',
@@ -55,7 +55,7 @@ class SideNavigationBar extends StatelessWidget {
                     title: 'Demandes',
                     route: RequestListScreen(),
                   ),
-                  _buildNavItem(
+                  /*_buildNavItem(
                     context,
                     icon: Icons.bar_chart_outlined,
                     title: 'Rapports',

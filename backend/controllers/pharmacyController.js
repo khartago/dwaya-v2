@@ -1,8 +1,36 @@
 const Pharmacy = require('../models/Pharmacy');
 const bcrypt = require('bcryptjs');
 
+// Get all pharmacies
+exports.getPharmacies = async (req, res) => {
+  try {
+    const pharmacies = await Pharmacy.find()
+      .populate('region', 'name')
+      .populate('ville', 'name');
+    res.status(200).json(pharmacies);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error.', error: error.message });
+  }
+};
+
+// Get a single pharmacy by ID
+exports.getPharmacyById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const pharmacy = await Pharmacy.findById(id)
+      .populate('region', 'name')
+      .populate('ville', 'name');
+    if (!pharmacy) {
+      return res.status(404).json({ message: 'Pharmacy not found.' });
+    }
+    res.status(200).json(pharmacy);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error.', error: error.message });
+  }
+};
+
 // Create a new pharmacy
-exports.addPharmacy = async (req, res) => {
+exports.createPharmacy = async (req, res) => {
   try {
     const {
       nom,
@@ -13,18 +41,11 @@ exports.addPharmacy = async (req, res) => {
       email,
       mot_de_passe,
       abonnement,
-      lien_google_maps
+      lien_google_maps,
     } = req.body;
 
-    // Validate subscription fields
-    if (!abonnement || !abonnement.plan || !abonnement.date_debut || !abonnement.date_fin) {
-      return res.status(400).json({ message: 'Les détails de l’abonnement sont obligatoires.' });
-    }
-
-    // Hash the password
     const hashedPassword = await bcrypt.hash(mot_de_passe, 10);
 
-    // Create a new pharmacy document
     const newPharmacy = new Pharmacy({
       nom,
       region,
@@ -37,11 +58,10 @@ exports.addPharmacy = async (req, res) => {
       lien_google_maps,
     });
 
-    // Save to the database
     await newPharmacy.save();
-    res.status(201).json({ message: 'Pharmacie créée avec succès.', pharmacy: newPharmacy });
-  } catch (err) {
-    res.status(500).json({ message: 'Erreur lors de la création de la pharmacie.', error: err.message });
+    res.status(201).json({ message: 'Pharmacy created successfully.', pharmacy: newPharmacy });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error.', error: error.message });
   }
 };
 
@@ -49,47 +69,103 @@ exports.addPharmacy = async (req, res) => {
 exports.updatePharmacy = async (req, res) => {
   try {
     const { id } = req.params;
-    const updates = req.body;
+    const {
+      nom,
+      region,
+      ville,
+      adresse,
+      telephone,
+      email,
+      abonnement,
+      lien_google_maps,
+    } = req.body;
 
-    // If password is being updated, hash it
-    if (updates.mot_de_passe) {
-      updates.mot_de_passe = await bcrypt.hash(updates.mot_de_passe, 10);
+    const pharmacy = await Pharmacy.findById(id);
+    if (!pharmacy) {
+      return res.status(404).json({ message: 'Pharmacy not found.' });
     }
 
-    // Update the pharmacy
-    const updatedPharmacy = await Pharmacy.findByIdAndUpdate(id, updates, { new: true });
-    if (!updatedPharmacy) {
-      return res.status(404).json({ message: 'Pharmacie introuvable.' });
-    }
+    pharmacy.nom = nom || pharmacy.nom;
+    pharmacy.region = region || pharmacy.region;
+    pharmacy.ville = ville || pharmacy.ville;
+    pharmacy.adresse = adresse || pharmacy.adresse;
+    pharmacy.telephone = telephone || pharmacy.telephone;
+    pharmacy.email = email || pharmacy.email;
+    pharmacy.abonnement = abonnement || pharmacy.abonnement;
+    pharmacy.lien_google_maps = lien_google_maps || pharmacy.lien_google_maps;
 
-    res.status(200).json({ message: 'Pharmacie mise à jour avec succès.', pharmacy: updatedPharmacy });
-  } catch (err) {
-    res.status(500).json({ message: 'Erreur lors de la mise à jour de la pharmacie.', error: err.message });
+    await pharmacy.save();
+    res.status(200).json({ message: 'Pharmacy updated successfully.', pharmacy });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error.', error: error.message });
   }
 };
 
-// Extend subscription
+// Delete a pharmacy
+exports.deletePharmacy = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const pharmacy = await Pharmacy.findByIdAndDelete(id);
+    if (!pharmacy) {
+      return res.status(404).json({ message: 'Pharmacy not found.' });
+    }
+    res.status(200).json({ message: 'Pharmacy deleted successfully.' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error.', error: error.message });
+  }
+};
+
+// Toggle pharmacy status
+exports.togglePharmacyStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { actif } = req.body;
+
+    if (typeof actif !== 'boolean') {
+      return res.status(400).json({ message: 'Invalid status value.' });
+    }
+
+    const pharmacy = await Pharmacy.findById(id);
+    if (!pharmacy) {
+      return res.status(404).json({ message: 'Pharmacy not found.' });
+    }
+
+    pharmacy.actif = actif;
+    await pharmacy.save();
+
+    res.status(200).json({
+      message: `Pharmacy ${actif ? 'activated' : 'deactivated'} successfully.`,
+      pharmacy,
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error.', error: error.message });
+  }
+};
+
+// Extend subscription duration
 exports.extendSubscription = async (req, res) => {
   try {
     const { id } = req.params;
     const { additionalMonths } = req.body;
 
     if (!additionalMonths || additionalMonths <= 0) {
-      return res.status(400).json({ message: 'Le nombre de mois supplémentaires est invalide.' });
+      return res.status(400).json({ message: 'Invalid subscription extension.' });
     }
 
     const pharmacy = await Pharmacy.findById(id);
     if (!pharmacy) {
-      return res.status(404).json({ message: 'Pharmacie introuvable.' });
+      return res.status(404).json({ message: 'Pharmacy not found.' });
     }
 
-    const currentEndDate = pharmacy.abonnement.date_fin || new Date();
+    const currentEndDate = pharmacy.abonnement.date_fin;
     pharmacy.abonnement.date_fin = new Date(currentEndDate.setMonth(currentEndDate.getMonth() + additionalMonths));
-    pharmacy.abonnement.actif = true; // Ensure subscription is active after extension
-
     await pharmacy.save();
-    res.status(200).json({ message: 'Abonnement prolongé avec succès.', pharmacy });
-  } catch (err) {
-    res.status(500).json({ message: 'Erreur lors de la prolongation de l\'abonnement.', error: err.message });
+
+    res.status(200).json({
+      message: `Subscription extended by ${additionalMonths} month(s).`,
+      pharmacy,
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error.', error: error.message });
   }
 };

@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../services/admin_api.dart';
@@ -33,27 +31,21 @@ class _UpdatePharmacyScreenState extends State<UpdatePharmacyScreen> {
       _isLoading = true;
     });
 
-    try {
-      final response = await AdminApi.updatePharmacy(_formData['_id'], _formData);
-      if (response.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Pharmacie mise à jour avec succès!")),
-        );
-        Navigator.pop(context);
-      } else {
-        final errorMessage = json.decode(response.body)['message'] ?? "Erreur inconnue";
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Erreur: $errorMessage")),
-        );
-      }
-    } catch (error) {
+    final response = await AdminApi.updatePharmacy(_formData['_id'], _formData);
+
+    setState(() {
+      _isLoading = false;
+    });
+
+    if (response.statusCode == 200) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Erreur: $error")),
+        const SnackBar(content: Text("Pharmacie mise à jour avec succès!")),
       );
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      Navigator.pop(context);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Erreur: ${response.body}")),
+      );
     }
   }
 
@@ -73,58 +65,50 @@ class _UpdatePharmacyScreenState extends State<UpdatePharmacyScreen> {
               children: [
                 TextFormField(
                   initialValue: _formData['nom'],
-                  decoration: const InputDecoration(
-                    labelText: 'Nom',
-                    prefixIcon: Icon(Icons.local_pharmacy),
-                  ),
+                  decoration: const InputDecoration(labelText: 'Nom'),
                   onSaved: (value) => _formData['nom'] = value,
                   validator: (value) => value == null || value.isEmpty ? 'Nom requis' : null,
                 ),
                 SizedBox(height: 16.h),
                 TextFormField(
                   initialValue: _formData['telephone'],
-                  decoration: const InputDecoration(
-                    labelText: 'Téléphone',
-                    prefixIcon: Icon(Icons.phone),
-                  ),
+                  decoration: const InputDecoration(labelText: 'Téléphone'),
                   onSaved: (value) => _formData['telephone'] = value,
                   validator: (value) => value == null || value.isEmpty ? 'Téléphone requis' : null,
                 ),
                 SizedBox(height: 16.h),
                 TextFormField(
                   initialValue: _formData['email'],
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    prefixIcon: Icon(Icons.email),
-                  ),
+                  decoration: const InputDecoration(labelText: 'Email'),
                   onSaved: (value) => _formData['email'] = value,
                   validator: (value) => value == null || value.isEmpty ? 'Email requis' : null,
                 ),
                 SizedBox(height: 16.h),
                 TextFormField(
                   initialValue: _formData['adresse'],
-                  decoration: const InputDecoration(
-                    labelText: 'Adresse',
-                    prefixIcon: Icon(Icons.location_on),
-                  ),
+                  decoration: const InputDecoration(labelText: 'Adresse'),
                   onSaved: (value) => _formData['adresse'] = value,
                   validator: (value) => value == null || value.isEmpty ? 'Adresse requise' : null,
+                ),
+                SizedBox(height: 16.h),
+                DropdownButtonFormField<String>(
+                  value: _formData['statut_abonnement'],
+                  decoration: const InputDecoration(labelText: 'Statut d’Abonnement'),
+                  items: ["Actif", "Inactif"]
+                      .map((statut) => DropdownMenuItem<String>(
+                            value: statut,
+                            child: Text(statut),
+                          ))
+                      .toList(),
+                  onChanged: (value) => _formData['statut_abonnement'] = value,
+                  validator: (value) => value == null ? 'Statut requis' : null,
                 ),
                 SizedBox(height: 30.h),
                 _isLoading
                     ? const CircularProgressIndicator()
                     : ElevatedButton(
                         onPressed: _submitForm,
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 20.w),
-                          child: Text(
-                            "Enregistrer",
-                            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                                  color: Colors.white,
-                                  fontSize: 16.sp,
-                                ),
-                          ),
-                        ),
+                        child: const Text("Enregistrer"),
                       ),
               ],
             ),

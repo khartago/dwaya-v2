@@ -2,26 +2,34 @@ const express = require('express');
 const router = express.Router();
 const {
   getPharmacies,
-  addPharmacy,
+  getPharmacyById,
+  createPharmacy,
   updatePharmacy,
+  deletePharmacy,
   togglePharmacyStatus,
   extendSubscription,
 } = require('../controllers/pharmacyController');
-const { verifyToken, verifyAdmin } = require('../middlewares/auth');
+const { verifyAdmin, verifyToken } = require('../middlewares/auth');
 
-// List all pharmacies with filters
+// Get all pharmacies
 router.get('/', verifyToken, verifyAdmin, getPharmacies);
 
-// Add a new pharmacy
-router.post('/', verifyToken, verifyAdmin, addPharmacy);
+// Get a single pharmacy by ID
+router.get('/:id', verifyToken, verifyAdmin, getPharmacyById);
 
-// Update pharmacy details
+// Create a new pharmacy
+router.post('/', verifyToken, verifyAdmin, createPharmacy);
+
+// Update an existing pharmacy
 router.put('/:id', verifyToken, verifyAdmin, updatePharmacy);
 
-// Activate/Deactivate a pharmacy
+// Delete a pharmacy
+router.delete('/:id', verifyToken, verifyAdmin, deletePharmacy);
+
+// Toggle pharmacy status (activate/deactivate)
 router.patch('/:id/status', verifyToken, verifyAdmin, togglePharmacyStatus);
 
-// Extend subscription
+// Extend subscription duration
 router.patch('/:id/subscription', verifyToken, verifyAdmin, extendSubscription);
 
 module.exports = router;

@@ -111,4 +111,78 @@ class AdminApi {
       throw Exception("Erreur lors du chargement des villes: ${response.body}");
     }
   }
+
+  // Extend subscription
+  static Future<http.Response> extendSubscription(String pharmacyId, Map<String, dynamic> subscriptionData) async {
+    final url = Uri.parse("$_baseUrl/pharmacies/$pharmacyId/extend-subscription");
+    final headers = await _getHeaders();
+    return await http.put(
+      url,
+      headers: headers,
+      body: json.encode(subscriptionData),
+    );
+  }
+
+  // Activate/Deactivate Pharmacy
+  static Future<http.Response> togglePharmacyStatus(String pharmacyId, bool isActive) async {
+    final url = Uri.parse("$_baseUrl/pharmacies/$pharmacyId/status");
+    final headers = await _getHeaders();
+    return await http.patch(
+      url,
+      headers: headers,
+      body: json.encode({'actif': isActive}),
+    );
+  }
+
+
+  // Fetch all users
+static Future<List<dynamic>> getUsers() async {
+  final url = Uri.parse("$_baseUrl/users");
+  final headers = await _getHeaders();
+  final response = await http.get(url, headers: headers);
+
+  if (response.statusCode == 200) {
+    return json.decode(response.body);
+  } else {
+    throw Exception("Erreur lors du chargement des utilisateurs: ${response.body}");
+  }
+}
+
+// Toggle user active status
+static Future<http.Response> toggleUserStatus(String userId, bool isActive) async {
+  final url = Uri.parse("$_baseUrl/users/$userId/status");
+  final headers = await _getHeaders();
+  return await http.patch(
+    url,
+    headers: headers,
+    body: json.encode({'actif': isActive}),
+  );
+}
+
+
+// Fetch all requests
+static Future<List<dynamic>> getRequests() async {
+  final url = Uri.parse("$_baseUrl/requests");
+  final headers = await _getHeaders();
+  final response = await http.get(url, headers: headers);
+
+  if (response.statusCode == 200) {
+    return json.decode(response.body);
+  } else {
+    throw Exception("Erreur lors du chargement des demandes: ${response.body}");
+  }
+}
+
+// Update request status
+static Future<http.Response> updateRequestStatus(String requestId, String status) async {
+  final url = Uri.parse("$_baseUrl/requests/$requestId/status");
+  final headers = await _getHeaders();
+  return await http.patch(
+    url,
+    headers: headers,
+    body: json.encode({'statut': status}),
+  );
+}
+
+
 }

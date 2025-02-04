@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../services/admin_api.dart';
-import '../../../widgets/side_navigation_bar.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'add_pharmacy_screen.dart';
 import 'update_pharmacy_screen.dart';
 
@@ -49,21 +48,8 @@ class _PharmacyListScreenState extends State<PharmacyListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          "Liste des Pharmacies",
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: _navigateToAddPharmacy,
-          ),
-        ],
+        title: const Text("Liste des Pharmacies"),
       ),
-      drawer: const SideNavigationBar(),
       body: Padding(
         padding: EdgeInsets.all(16.w),
         child: FutureBuilder<List<dynamic>>(
@@ -92,7 +78,15 @@ class _PharmacyListScreenState extends State<PharmacyListScreen> {
                   return ListTile(
                     title: Text(pharmacy['nom']),
                     subtitle: Text(pharmacy['region']),
-                    trailing: const Icon(Icons.edit),
+                    trailing: Switch(
+                      value: pharmacy['actif'],
+                      onChanged: (value) async {
+                        await AdminApi.togglePharmacyStatus(pharmacy['_id'], value);
+                        setState(() {
+                          _pharmacies = AdminApi.getPharmacies();
+                        });
+                      },
+                    ),
                     onTap: () => _navigateToUpdatePharmacy(pharmacy),
                   );
                 },
@@ -100,6 +94,10 @@ class _PharmacyListScreenState extends State<PharmacyListScreen> {
             }
           },
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _navigateToAddPharmacy,
+        child: const Icon(Icons.add),
       ),
     );
   }
